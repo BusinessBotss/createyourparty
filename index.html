@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Planificador de Eventos Privados</title>
+  <style>
+    :root { --bg:#121212; --card:rgba(25,27,30,0.9); --primary:#ffffff; --accent:#ff4081; --text:#e0e0e0; --text-sec:#8b949e; --shadow:rgba(0,0,0,0.8); --radius:12px; }
+    *, *::before, *::after { box-sizing:border-box; }
+    body { margin:0; padding:1rem; background:var(--bg); color:var(--text); font-family:'Poppins',sans-serif; display:flex; justify-content:center; align-items:center; min-height:100vh; }
+    .container { background:var(--card); border-radius:var(--radius); box-shadow:0 10px 30px var(--shadow); width:100%; max-width:520px; padding:2rem; position:relative; }
+    h1 { margin-bottom:1.5rem; text-align:center; color:var(--primary); font-size:1.8rem; }
+    .lang-switch { position:absolute; top:1rem; right:1rem; display:flex; gap:0.5rem; }
+    .lang-btn { background:transparent; border:none; color:var(--text-sec); cursor:pointer; padding:0.25rem 0.5rem; border-radius:4px; transition:background 0.2s,color 0.2s; font-size:0.8rem; }
+    .lang-btn.active, .lang-btn:hover { background:var(--primary); color:#121212; }
+    .field { margin-bottom:1rem; }
+    label { display:block; margin-bottom:0.3rem; color:var(--text-sec); }
+    input, select, textarea { width:100%; padding:0.75rem; border:none; border-radius:6px; background:rgba(255,255,255,0.05); color:var(--text); font-size:0.95rem; transition:background 0.2s; }
+    input:focus, select:focus, textarea:focus { background:rgba(255,255,255,0.1); outline:none; box-shadow:0 0 0 2px var(--accent); }
+    details { background:rgba(255,255,255,0.05); border-radius:6px; padding:0.5rem; }
+    summary { cursor:pointer; font-weight:500; color:var(--text); }
+    .services-list { margin-top:0.75rem; display:grid; gap:0.5rem; }
+    .services-list label { display:flex; align-items:center; gap:0.5rem; cursor:pointer; }
+    .services-list input { transform:scale(1.2); }
+    .btn { display:block; width:100%; padding:0.75rem; margin-top:0.5rem; background:var(--accent); color:#121212; border:none; border-radius:var(--radius); font-size:1rem; font-weight:600; cursor:pointer; transition:transform 0.2s; }
+    .btn:disabled { opacity:0.6; cursor:not-allowed; }
+    .btn:not(:disabled):hover { transform:translateY(-2px); }
+    #summary { margin-top:1.5rem; padding:1rem; background:rgba(255,255,255,0.1); border-radius:var(--radius); font-size:0.95rem; white-space:pre-wrap; }
+    .hidden { display:none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="lang-switch">
+      <button class="lang-btn active" data-lang="es">ES</button>
+      <button class="lang-btn" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="de">DE</button>
+      <button class="lang-btn" data-lang="fr">FR</button>
+      <button class="lang-btn" data-lang="it">IT</button>
+      <button class="lang-btn" data-lang="ar">AR</button>
+    </div>
+    <h1 id="title"></h1>
+    <form id="event-form" novalidate>
+      <div class="field">
+        <label id="label-venue" for="venue"></label>
+        <select id="venue" required>
+          <option value="" disabled selected>--</option>
+        </select>
+      </div>
+      <div class="field">
+        <label id="label-date" for="date"></label>
+        <input type="date" id="date" required />
+      </div>
+      <div class="field">
+        <label id="label-time" for="time"></label>
+        <input type="time" id="time" required />
+      </div>
+      <div class="field">
+        <label id="label-duration" for="duration"></label>
+        <input type="number" id="duration" min="1" value="4" required />
+      </div>
+      <div class="field">
+        <label id="label-guests" for="guests"></label>
+        <input type="number" id="guests" min="1" value="50" required />
+      </div>
+      <details class="field">
+        <summary id="label-services"></summary>
+        <div class="services-list">
+          <label for="security"><input type="checkbox" id="security"><span data-label="security"></span></label>
+          <label for="bartender"><input type="checkbox" id="bartender"><span data-label="bartender"></span></label>
+          <label for="dj"><input type="checkbox" id="dj"><span data-label="dj"></span></label>
+          <label for="cleaning"><input type="checkbox" id="cleaning"><span data-label="cleaning"></span></label>
+          <label for="photography"><input type="checkbox" id="photography"><span data-label="photography"></span></label>
+          <label for="kidsCare"><input type="checkbox" id="kidsCare"><span data-label="kidsCare"></span></label>
+        </div>
+      </details>
+      <div class="field">
+        <label id="label-budget" for="budget"></label>
+        <input type="number" id="budget" min="0" step="100" value="1000" required />
+      </div>
+      <div class="field">
+        <label id="label-notes" for="notes"></label>
+        <textarea id="notes" rows="3"></textarea>
+      </div>
+      <button type="submit" class="btn" id="btn-generate" disabled></button>
+    </form>
+    <div id="summary" class="hidden"></div>
+    <button id="btn-send" class="btn hidden"></button>
+  </div>
+  <script>
+    const translations = {
+      es: { title: "Organiza tu Evento Privado", venueLabel: "Tipo de lugar", venueOptions: ["Local","Casa"], date: "Fecha", time: "Hora inicio", duration: "Duración (h)", guests: "Invitados", services: "Servicios adicionales", security: "Seguridad", bartender: "Bartender", dj: "DJ", cleaning: "Servicio limpieza", photography: "Fotografía y vídeo", kidsCare: "Kids Care", budget: "Presupuesto F&B (€)", notes: "Notas adicionales", btnGenerate: "Generar Resumen", btnSend: "Enviar por WhatsApp", summaryPrefix: "Resumen del Evento Privado:" },
+      en: { title: "Plan Your Private Event", venueLabel: "Venue Type", venueOptions: ["Venue","Home"], date: "Date", time: "Start Time", duration: "Duration (h)", guests: "Guests", services: "Additional Services", security: "Security", bartender: "Bartender", dj: "DJ", cleaning: "Cleaning Service", photography: "Photography & Video", kidsCare: "Kids Care", budget: "Food & Bev Budget (€)", notes: "Additional Notes", btnGenerate: "Generate Summary", btnSend: "Send via WhatsApp", summaryPrefix: "Private Event Summary:" },
+      de: { title: "Plane Dein Privates Event", venueLabel: "Veranstaltungsort", venueOptions: ["Venue","Zuhause"], date: "Datum", time: "Startzeit", duration: "Dauer (h)", guests: "Gäste", services: "Zusatzleistungen", security: "Sicherheit", bartender: "Barkeeper", dj: "DJ", cleaning: "Reinigung", photography: "Foto & Video", kidsCare: "Kids Care", budget: "Budget F&B (€)", notes: "Notizen", btnGenerate: "Zusammenfassung erstellen", btnSend: "Per WhatsApp senden", summaryPrefix: "Event-Zusammenfassung:" },
+      fr: { title: "Organisez Votre Événement Privé", venueLabel: "Type de lieu", venueOptions: ["Lieu","Maison"], date: "Date", time: "Heure début", duration: "Durée (h)", guests: "Invités", services: "Services suppl.", security: "Sécurité", bartender: "Barman", dj: "DJ", cleaning: "Nettoyage", photography: "Photo & Vidéo", kidsCare: "Kids Care", budget: "Budget Restauration (€)", notes: "Notes suppl.", btnGenerate: "Générer résumé", btnSend: "Envoyer WhatsApp", summaryPrefix: "Résumé de l’événement:" },
+      it: { title: "Pianifica il Tuo Evento Privato", venueLabel: "Tipo Location", venueOptions: ["Locale","Casa"], date: "Data", time: "Ora inizio", duration: "Durata (h)", guests: "Ospiti", services: "Servizi aggiuntivi", security: "Sicurezza", bartender: "Bartender", dj: "DJ", cleaning: "Pulizie", photography: "Foto & Video", kidsCare: "Kids Care", budget: "Budget F&B (€)", notes: "Note aggiuntive", btnGenerate: "Genera Riepilogo", btnSend: "Invia WhatsApp", summaryPrefix: "Riepilogo evento:" },
+      ar: { title: "نظم حدثك الخاص", venueLabel: "نوع المكان", venueOptions: ["القاعة","المنزل"], date: "التاريخ", time: "وقت البدء", duration: "المدة (س)", guests: "المدعوون", services: "خدمات إضافية", security: "حماية", bartender: "نادل", dj: "دي جي", cleaning: "تنظيف", photography: "تصوير", kidsCare: "رعاية أطفال", budget: "ميزانية الطعام (€)", notes: "ملاحظات", btnGenerate: "إنشاء الملخص", btnSend: "إرسال واتساب", summaryPrefix: "ملخص الحدث:" }
+    };
+    const elsMap = {};
+    ['title','venue','date','time','duration','guests','label-venue','label-date','label-time','label-duration','label-guests','label-services','budget','label-budget','notes','label-notes','btn-generate','btn-send','summary']
+      .forEach(id => elsMap[id] = document.getElementById(id));
+    const langBtns = document.querySelectorAll('.lang-btn');
+    let currentLang = 'es';
+    function applyLang() {
+      const t = translations[currentLang];
+      elsMap.title.textContent = t.title;
+      elsMap['label-venue'].textContent = t.venueLabel;
+      elsMap.venue.innerHTML = `<option value="" disabled selected>-- ${t.venueLabel} --</option>` + t.venueOptions.map(o => `<option>${o}</option>`).join('');
+      ['date','time','duration','guests'].forEach(key => {
+        elsMap['label-'+key].textContent = t[key];
+      });
+      document.getElementById('label-services').textContent = t.services;
+      document.querySelectorAll('.services-list span').forEach(sp => sp.textContent = t[sp.getAttribute('data-label')]);
+      elsMap['label-budget'].textContent = t.budget;
+      elsMap['label-notes'].textContent = t.notes;
+      elsMap['btn-generate'].textContent = t.btnGenerate;
+      elsMap['btn-send'].textContent = t.btnSend;
+    }
+    langBtns.forEach(btn => btn.addEventListener('click', () => {
+      langBtns.forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      currentLang = btn.dataset.lang;
+      document.documentElement.lang = currentLang;
+      document.documentElement.dir = currentLang === 'ar' ? 'rtl' : 'ltr';
+      applyLang();
+      elsMap.summary.classList.add('hidden');
+      elsMap['btn-send'].classList.add('hidden');
+    }));
+    applyLang();
+    elsMap.date.min = new Date().toISOString().split('T')[0];
+    function isValid() {
+      return ['venue','date','time','duration','guests'].every(key => Boolean(elsMap[key].value));
+    }
+    ['venue','date','time','duration','guests'].forEach(key => elsMap[key].addEventListener('input', () => elsMap['btn-generate'].disabled = !isValid()));
+    document.getElementById('event-form').addEventListener('submit', e => {
+      e.preventDefault();
+      const t = translations[currentLang];
+      let summary = `${t.summaryPrefix}\n`;
+      ['venue','date','time','duration','guests'].forEach(key => summary += `- ${t[key]}: ${elsMap[key].value}\n`);
+      ['security','bartender','dj','cleaning','photography','kidsCare'].forEach(key => {
+        const checked = document.getElementById(key).checked;
+        const yesNo = checked ? (currentLang === 'ar' ? 'نعم' : 'Sí') : (currentLang === 'ar' ? 'لا' : 'No');
+        summary += `- ${t[key]}: ${yesNo}\n`;
+      });
+      summary += `- ${t.budget}: €${elsMap.budget.value}\n`;
+      summary += `- ${t.notes}: ${elsMap.notes.value || '-'}`;
+      elsMap.summary.textContent = summary;
+      elsMap.summary.classList.remove('hidden');
+      elsMap['btn-send'].classList.remove('hidden');
+      elsMap['btn-send'].onclick = () => window.open(`https://wa.me/?text=${encodeURIComponent(summary)}`, '_blank');
+    });
+  </script>
+</body>
+</html>
